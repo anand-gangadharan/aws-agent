@@ -43,8 +43,8 @@ resource "aws_lambda_function" "mcp_proxy" {
 
   environment {
     variables = {
-      MEMORY_TABLE_NAME = aws_dynamodb_table.memory.name
-      MCP_SERVER_URL    = "http://localhost:8000"
+      MEMORY_TABLE_NAME        = aws_dynamodb_table.memory.name
+      MCP_SERVER_FUNCTION_NAME = aws_lambda_function.mcp_server.function_name
     }
   }
 }

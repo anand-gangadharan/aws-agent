@@ -1,0 +1,102 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Bedrock",
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:*Agent*",
+                "bedrock:*KnowledgeBase*",
+                "bedrock:*DataSource*",
+                "bedrock:*Guardrail*",
+                "bedrock:*IngestionJob*",
+                "bedrock:InvokeModel*",
+                "bedrock:GetFoundationModel",
+                "bedrock:ListFoundationModels",
+                "bedrock:ListTagsForResource",
+                "bedrock:TagResource",
+                "bedrock:UntagResource"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "Lambda",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:*Function*",
+                "lambda:*LayerVersion*",
+                "lambda:*Permission*",
+                "lambda:GetPolicy",
+                "lambda:*Tag*"
+            ],
+            "Resource": [
+                "arn:aws:lambda:*:992382398545:function:cicd-agent-*",
+                "arn:aws:lambda:*:992382398545:layer:cicd-agent-*"
+            ]
+        },
+        {
+            "Sid": "IAM",
+            "Effect": "Allow",
+            "Action": [
+                "iam:*Role*",
+                "iam:PassRole",
+                "iam:*Tag*"
+            ],
+            "Resource": "arn:aws:iam::992382398545:role/cicd-agent-*"
+        },
+        {
+            "Sid": "S3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*Bucket*",
+                "s3:*Object*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::cicd-agent-kb-*",
+                "arn:aws:s3:::cicd-agent-kb-*/*"
+            ]
+        },
+        {
+            "Sid": "DynamoDB",
+            "Effect": "Allow",
+            "Action": "dynamodb:*",
+            "Resource": "arn:aws:dynamodb:*:992382398545:table/cicd-agent-*"
+        },
+        {
+            "Sid": "APIGateway",
+            "Effect": "Allow",
+            "Action": "apigateway:*",
+            "Resource": "arn:aws:apigateway:*::/apis*"
+        },
+        {
+            "Sid": "RDS",
+            "Effect": "Allow",
+            "Action": [
+                "rds:*DBCluster*",
+                "rds:*DBInstance*",
+                "rds:*TagsToResource",
+                "rds:ListTagsForResource",
+                "rds:Describe*"
+            ],
+            "Resource": [
+                "arn:aws:rds:*:992382398545:cluster:cicd-agent-*",
+                "arn:aws:rds:*:992382398545:db:cicd-agent-*"
+            ]
+        },
+        {
+            "Sid": "Secrets",
+            "Effect": "Allow",
+            "Action": "secretsmanager:*",
+            "Resource": "arn:aws:secretsmanager:*:992382398545:secret:cicd-agent-*"
+        },
+        {
+            "Sid": "Logs",
+            "Effect": "Allow",
+            "Action": "logs:*",
+            "Resource": [
+                "arn:aws:logs:*:992382398545:log-group:/aws/lambda/cicd-agent-*",
+                "arn:aws:logs:*:992382398545:log-group:/aws/bedrock/agent/*"
+            ]
+        }
+    ]
+}

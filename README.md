@@ -61,6 +61,22 @@ See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed file organization 
 - AWS CLI configured
 - AWS Bedrock model access (Nova Pro, Titan Embeddings v2)
 
+## Cost Estimate
+
+**Expected monthly cost: $22 - $61** (typical POC usage: ~$35/month)
+
+See [COST_ESTIMATE.md](COST_ESTIMATE.md) for detailed breakdown.
+
+Key costs:
+- RDS Aurora Serverless v2: $12-30/month (vector storage)
+- Bedrock Agents (Nova Pro): $5-20/month (LLM)
+- Lambda + DynamoDB + S3: $2-11/month (infrastructure)
+
+Already optimized:
+- ✅ Using Nova Pro (75% cheaper than Claude)
+- ✅ Using RDS (83% cheaper than OpenSearch)
+- ✅ Serverless architecture (scales to zero)
+
 ## Setup
 
 1. Deploy infrastructure: `cd terraform && terraform init && terraform apply`

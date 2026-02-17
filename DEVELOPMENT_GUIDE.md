@@ -123,33 +123,27 @@ for KB_ID in $ORCH_KB $BOOT_KB $COMP_KB $APP_KB; do
 done
 ```
 
-### Step 5: Start MCP Server (Local Testing)
+### Step 5: Verify Deployment (No MCP Server Startup Needed!)
+
+The MCP server is now deployed as a Lambda function - no manual startup required!
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Verify MCP server Lambda exists
+aws lambda get-function --function-name cicd-agent-mcp-server
 
-# Start MCP server
-cd src/mcp_server
-python http_server.py
+# Test MCP server directly
+aws lambda invoke \
+  --function-name cicd-agent-mcp-server \
+  --payload '{"action":"execute","pipeline_type":"bootstrap","environment":"dev"}' \
+  response.json
 
-# Server runs on http://localhost:8000
-# Keep this terminal open
-```
+cat response.json | jq
 
-**Note**: For production, deploy MCP server to ECS/Lambda (see Production Deployment section).
-
-### Step 6: Verify Deployment
-
-```bash
 # Get API Gateway URL
 cd terraform
 API_URL=$(terraform output -raw api_gateway_url)
 
-# Test health endpoint
-curl $API_URL/health
-
-# Test chat endpoint
+# Test via API Gateway
 curl -X POST "$API_URL/chat" \
   -H "Content-Type: application/json" \
   -d '{"message": "Hello, can you help me?"}'
@@ -340,38 +334,27 @@ curl -X POST "$API_URL/chat" \
 
 ### When MCP Server Changes
 
-**Scenario**: You updated `src/mcp_server/http_server.py`
+**Scenario**: You updated `src/mcp_server/lambda_handler.py`
 
-**Local Development**:
 ```bash
-# 1. Stop the running MCP server (Ctrl+C)
+# 1. Navigate to terraform directory
+cd terraform
 
-# 2. Restart it
-cd src/mcp_server
-python http_server.py
+# 2. Terraform will detect changes and update Lambda
+terraform apply
 
-# 3. Test
-curl http://localhost:8000/health
+# 3. Test immediately
+aws lambda invoke \
+  --function-name cicd-agent-mcp-server \
+  --payload '{"action":"execute","pipeline_type":"bootstrap","environment":"dev"}' \
+  response.json
+
+cat response.json | jq
 ```
 
-**Production (ECS)**:
-```bash
-# 1. Build new Docker image
-docker build -t mcp-server:latest src/mcp_server/
+**Time to take effect**: Immediate (after terraform apply)
 
-# 2. Push to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPO
-docker tag mcp-server:latest $ECR_REPO/mcp-server:latest
-docker push $ECR_REPO/mcp-server:latest
-
-# 3. Update ECS service (forces new deployment)
-aws ecs update-service \
-    --cluster mcp-cluster \
-    --service mcp-server \
-    --force-new-deployment
-```
-
-**Time to take effect**: Immediate (local) or 2-3 minutes (ECS)
+**Agent restart needed**: ❌ No (Lambda is stateless)
 
 ### When Agent Instructions Change
 
@@ -429,7 +412,7 @@ curl -X POST "$API_URL/chat" \
 |-----------|--------|----------------|---------|
 | Knowledge Base | Updated .md files | ❌ No | Sync KB |
 | Lambda | Updated .py files | ❌ No | `terraform apply` |
-| MCP Server | Updated http_server.py | ✅ Yes | Restart process |
+| MCP Server | Updated lambda_handler.py | ❌ No | `terraform apply` |
 | Agent Instructions | Updated instructions | ✅ Yes | `prepare-agent` |
 | Action Groups | Updated schemas | ✅ Yes | `prepare-agent` |
 | Infrastructure | Updated .tf files | ❌ No | `terraform apply` |
@@ -540,25 +523,27 @@ response = bedrock_agent_runtime.invoke_agent(
 
 #### 4. MCP Server Logs
 
-**Local Development**:
-- Logs appear in terminal where you ran `python http_server.py`
+**Location**: CloudWatch → Log groups
 
-**Production (ECS)**:
 ```
-/aws/ecs/mcp-server
+/aws/lambda/cicd-agent-mcp-server
 ```
 
-**View ECS logs**:
+**What you'll see**:
+- Pipeline execution requests
+- Parameters identified by agents
+- GitLab API calls (stubbed)
+- Execution results
+
+**View logs**:
 ```bash
-# Get task ID
-TASK_ID=$(aws ecs list-tasks \
-    --cluster mcp-cluster \
-    --service-name mcp-server \
-    --query 'taskArns[0]' \
-    --output text | cut -d'/' -f3)
+# Tail logs
+aws logs tail /aws/lambda/cicd-agent-mcp-server --follow
 
-# View logs
-aws logs tail /aws/ecs/mcp-server --follow
+# Find pipeline executions
+aws logs filter-log-events \
+    --log-group-name /aws/lambda/cicd-agent-mcp-server \
+    --filter-pattern "PIPELINE EXECUTION"
 ```
 
 ### Useful Log Queries

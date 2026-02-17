@@ -34,12 +34,15 @@ resource "aws_bedrockagent_agent" "orchestrator" {
     guardrail_identifier = aws_bedrock_guardrail.main.guardrail_id
     guardrail_version    = "DRAFT"
   }
-  
-  # Associate knowledge base
-  knowledge_base {
-    knowledge_base_id = aws_bedrockagent_knowledge_base.orchestrator.id
-    description       = "Orchestration patterns and pipeline dependencies"
-  }
+}
+
+# Associate knowledge base with orchestrator agent
+resource "aws_bedrockagent_agent_knowledge_base_association" "orchestrator" {
+  agent_id             = aws_bedrockagent_agent.orchestrator.id
+  agent_version        = "DRAFT"
+  knowledge_base_id    = aws_bedrockagent_knowledge_base.orchestrator.id
+  description          = "Orchestration patterns and pipeline dependencies"
+  knowledge_base_state = "ENABLED"
 }
 
 # Bootstrap Agent
@@ -72,11 +75,15 @@ resource "aws_bedrockagent_agent" "bootstrap" {
     
     Use your knowledge base for best practices and configuration details.
   EOT
-  
-  knowledge_base {
-    knowledge_base_id = aws_bedrockagent_knowledge_base.bootstrap.id
-    description       = "Bootstrap pipeline documentation and best practices"
-  }
+}
+
+# Associate knowledge base with bootstrap agent
+resource "aws_bedrockagent_agent_knowledge_base_association" "bootstrap" {
+  agent_id             = aws_bedrockagent_agent.bootstrap.id
+  agent_version        = "DRAFT"
+  knowledge_base_id    = aws_bedrockagent_knowledge_base.bootstrap.id
+  description          = "Bootstrap pipeline documentation and best practices"
+  knowledge_base_state = "ENABLED"
 }
 
 # Compute Agent
@@ -110,11 +117,15 @@ resource "aws_bedrockagent_agent" "compute" {
     
     Use your knowledge base for instance sizing and configuration guidance.
   EOT
-  
-  knowledge_base {
-    knowledge_base_id = aws_bedrockagent_knowledge_base.compute.id
-    description       = "Compute pipeline documentation and sizing guides"
-  }
+}
+
+# Associate knowledge base with compute agent
+resource "aws_bedrockagent_agent_knowledge_base_association" "compute" {
+  agent_id             = aws_bedrockagent_agent.compute.id
+  agent_version        = "DRAFT"
+  knowledge_base_id    = aws_bedrockagent_knowledge_base.compute.id
+  description          = "Compute pipeline documentation and sizing guides"
+  knowledge_base_state = "ENABLED"
 }
 
 # App Agent
@@ -148,9 +159,13 @@ resource "aws_bedrockagent_agent" "app" {
     
     Use your knowledge base for application deployment best practices.
   EOT
-  
-  knowledge_base {
-    knowledge_base_id = aws_bedrockagent_knowledge_base.app.id
-    description       = "Application deployment documentation and patterns"
-  }
+}
+
+# Associate knowledge base with app agent
+resource "aws_bedrockagent_agent_knowledge_base_association" "app" {
+  agent_id             = aws_bedrockagent_agent.app.id
+  agent_version        = "DRAFT"
+  knowledge_base_id    = aws_bedrockagent_knowledge_base.app.id
+  description          = "Application deployment documentation and patterns"
+  knowledge_base_state = "ENABLED"
 }

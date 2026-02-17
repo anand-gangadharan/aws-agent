@@ -1,17 +1,18 @@
 """
 Lambda function that proxies MCP tool calls from Bedrock agents.
-This is where the actual pipeline execution happens via the MCP server.
+This invokes the MCP server Lambda function directly.
 """
 
 import json
 import os
 import boto3
-import requests
 from datetime import datetime
 
 dynamodb = boto3.resource('dynamodb')
+lambda_client = boto3.client('lambda')
+
 memory_table = dynamodb.Table(os.environ['MEMORY_TABLE_NAME'])
-mcp_server_url = os.environ.get('MCP_SERVER_URL', 'http://localhost:8000')
+mcp_server_function = os.environ.get('MCP_SERVER_FUNCTION_NAME')
 
 def handler(event, context):
     """
@@ -33,17 +34,8 @@ def handler(event, context):
             params = json.loads(body_content['application/json'])
     
     try:
-        # Route to appropriate MCP tool based on API path
-        if api_path == '/mcp/execute-bootstrap':
-            result = execute_mcp_tool('execute_bootstrap_pipeline', params)
-        elif api_path == '/mcp/execute-compute':
-            result = execute_mcp_tool('execute_compute_pipeline', params)
-        elif api_path == '/mcp/execute-app':
-            result = execute_mcp_tool('execute_app_pipeline', params)
-        elif api_path == '/mcp/get-status':
-            result = execute_mcp_tool('get_pipeline_status', params)
-        else:
-            result = {'error': f'Unknown API path: {api_path}'}
+        # Invoke MCP server Lambda directly
+        result = invoke_mcp_server_lambda(api_path, params)
         
         # Store execution in memory if successful
         if 'execution_id' in result and 'error' not in result:
@@ -80,54 +72,59 @@ def handler(event, context):
             }
         }
 
-def execute_mcp_tool(tool_name, params):
+def invoke_mcp_server_lambda(api_path, params):
     """
-    Execute an MCP tool by calling the MCP server.
-    This is the actual pipeline execution.
+    Invoke MCP server Lambda function directly.
+    This is more reliable than HTTP calls.
     """
     
-    print(f"Executing MCP tool: {tool_name} with params: {params}")
+    print(f"Invoking MCP server Lambda: {mcp_server_function}")
+    print(f"API Path: {api_path}")
+    print(f"Parameters: {json.dumps(params)}")
     
-    # Map tool names to HTTP endpoints
-    if tool_name == 'execute_bootstrap_pipeline':
-        pipeline_type = 'bootstrap'
-    elif tool_name == 'execute_compute_pipeline':
-        pipeline_type = 'compute'
-    elif tool_name == 'execute_app_pipeline':
-        pipeline_type = 'app'
-    elif tool_name == 'get_pipeline_status':
-        # Status check
-        execution_id = params.get('execution_id')
-        response = requests.get(
-            f"{mcp_server_url}/status/{execution_id}",
-            timeout=10
-        )
-        return response.json()
-    else:
-        return {'error': f'Unknown tool: {tool_name}'}
+    # Map API path to pipeline type
+    pipeline_type_map = {
+        '/mcp/execute-bootstrap': 'bootstrap',
+        '/mcp/execute-compute': 'compute',
+        '/mcp/execute-app': 'app'
+    }
     
-    # Execute pipeline via MCP server
-    response = requests.post(
-        f"{mcp_server_url}/execute",
-        json={
-            'pipeline_type': pipeline_type,
+    if api_path in pipeline_type_map:
+        # Execute pipeline
+        payload = {
+            'action': 'execute',
+            'pipeline_type': pipeline_type_map[api_path],
             'environment': params.get('environment'),
             'tenant_id': params.get('tenant_id'),
-            'parameters': {
-                'region': params.get('region'),
-                'instance_type': params.get('instance_type'),
-                'instance_count': params.get('instance_count'),
-                'app_name': params.get('app_name'),
-                'app_version': params.get('app_version')
-            }
-        },
-        timeout=60
+            'region': params.get('region'),
+            'instance_type': params.get('instance_type'),
+            'instance_count': params.get('instance_count'),
+            'app_name': params.get('app_name'),
+            'app_version': params.get('app_version'),
+            'parameters': params
+        }
+    elif api_path == '/mcp/get-status':
+        # Get status
+        payload = {
+            'action': 'status',
+            'execution_id': params.get('execution_id')
+        }
+    else:
+        return {'error': f'Unknown API path: {api_path}'}
+    
+    # Invoke MCP server Lambda
+    response = lambda_client.invoke(
+        FunctionName=mcp_server_function,
+        InvocationType='RequestResponse',
+        Payload=json.dumps(payload)
     )
     
-    result = response.json()
-    print(f"MCP tool result: {json.dumps(result)}")
+    # Parse response
+    response_payload = json.loads(response['Payload'].read())
     
-    return result
+    print(f"MCP server response: {json.dumps(response_payload)}")
+    
+    return response_payload
 
 def store_in_memory(execution_result):
     """

@@ -104,6 +104,13 @@ resource "aws_iam_role_policy" "lambda" {
           "bedrock:RetrieveAndGenerate"
         ]
         Resource = "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:knowledge-base/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-mcp-server"
       }
     ]
   })

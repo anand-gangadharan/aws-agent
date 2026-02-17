@@ -1,0 +1,53 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RDSForBedrockKnowledgeBase",
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBCluster",
+        "rds:CreateDBInstance",
+        "rds:DescribeDBClusters",
+        "rds:DescribeDBInstances",
+        "rds:ModifyDBCluster",
+        "rds:ModifyDBInstance",
+        "rds:DeleteDBCluster",
+        "rds:DeleteDBInstance",
+        "rds:AddTagsToResource",
+        "rds:ListTagsForResource",
+        "rds:DescribeDBClusterParameters",
+        "rds:DescribeDBParameters"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:992382398545:cluster:cicd-agent-*",
+        "arn:aws:rds:*:992382398545:db:cicd-agent-*",
+        "arn:aws:rds:*:992382398545:cluster-pg:*",
+        "arn:aws:rds:*:992382398545:pg:*"
+      ]
+    },
+    {
+      "Sid": "RDSDescribeGlobal",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBEngineVersions",
+        "rds:DescribeDBSubnetGroups",
+        "rds:DescribeOptionGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsManagerForRDS",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:TagResource",
+        "secretsmanager:UpdateSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:*:992382398545:secret:cicd-agent-*"
+    }
+  ]
+}
